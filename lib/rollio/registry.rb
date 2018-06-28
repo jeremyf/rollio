@@ -4,7 +4,7 @@ require 'dice' # from dice_parser
 module Rollio
   # Responsible for registering random tables and exposing a means of rolling on those tables.
   class Registry
-    # @api public
+    # @api private
     # @example
     # document = [{
     #   key: '1-a',
@@ -79,7 +79,7 @@ module Rollio
       instance_exec(self, &block) if block_given?
     end
 
-    # @api public
+    # @api private
     # @param key [String] The key of the table you want to roll on
     # @see Registry::Table#key for details
     # @todo Consider adding a modifier (eg. `roll_on(key, with: -2)`)
