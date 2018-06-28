@@ -40,6 +40,7 @@ module Rollio
     #   end
     # @return [Rollio::Registry, #roll_on]
     # @todo Add document schema and validation
+    # @todo Expose #load method to allow additional loading outside of initialization
     def self.load(document = nil, context = self, &block)
       if document
         Registry.new do |registry|
@@ -121,6 +122,7 @@ module Rollio
         @tables.sort { |a,b| a[0] <=> b[0] }.each do |key, table|
           table.render
         end
+        nil
       end
     end
     private_constant :TableSet
@@ -136,14 +138,12 @@ module Rollio
       end
 
       def render
-        if label == key
-          puts "Table: #{key}"
-        else
-          puts "Table: #{key} - #{label}"
-        end
+        header = "Table: #{key}"
+        header = "#{header} - #{label}" unless label == key
+        puts header
+        puts '-' * header.length
         @roller.render
         @range_set.render
-        puts ""
       end
 
       def roll!

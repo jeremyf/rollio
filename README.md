@@ -1,8 +1,16 @@
 # Rollio
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/rollio`. To experiment with that code, run `bin/console` for an interactive prompt.
+A tool for loading random tables, rolling on those tables, and rendering the output.
 
-TODO: Delete this and the text above, and describe your gem
+## Todo List
+
+- [ ] Create schema to define valid JSON document
+- [ ] Integrate schema validation for loaded JSON document
+- [ ] Create structure for loading tables
+- [ ] Create command line tool
+  - [ ] List available tables (with help) (e.g. `rollio roll -h`)
+  - [ ] Look to parameterization of table rolls
+  - [ ] Roll on tables (e.g. `rollio roll background`)
 
 ## Installation
 
@@ -14,11 +22,15 @@ gem 'rollio'
 
 And then execute:
 
-    $ bundle
+```console
+$ bundle
+```
 
 Or install it yourself as:
 
-    $ gem install rollio
+```console
+$ gem install rollio
+```
 
 ## Usage
 
