@@ -6,6 +6,7 @@ require "rollio/version"
 Gem::Specification.new do |spec|
   spec.name          = "rollio"
   spec.version       = Rollio::VERSION
+  spec.licenses      = ['APACHE2']
   spec.authors       = ["Jeremy Friesen"]
   spec.email         = ["jeremy.n.friesen@gmail.com"]
 
