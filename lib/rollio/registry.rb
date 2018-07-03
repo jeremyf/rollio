@@ -128,7 +128,8 @@ module Rollio
     private_constant :TableSet
 
     class Table
-      attr_reader :key, :table_set, :label
+      attr_reader :key, :table_set, :label, :roller
+      private :roller
       def initialize(table_set:, key:, label:, &block)
         @key = key
         @table_set = table_set
@@ -142,12 +143,12 @@ module Rollio
         header = "#{header} - #{label}" unless label == key
         puts header
         puts '-' * header.length
-        @roller.render
+        roller.render
         @range_set.render
       end
 
-      def roll!
-        roll = @roller.roll!
+      def roll!(the_roller: roller)
+        roll = the_roller.roll!
         @range_set.resolve(roll: roll)
       end
 
