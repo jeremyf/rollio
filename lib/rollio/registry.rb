@@ -10,7 +10,7 @@ module Rollio
     #   key: '1-a',
     #   roll: '2d6',
     #   entries: [
-    #     { range: [2,3,4,5,6], roll_on: '1-b' },
+    #     { range: [2,3,4,5,6], roll_on: '1-b'},
     #     { range: [7], result: 'Yolo' },
     #     { range: [8,9,10,11,12], inner_table: {
     #         roll: '1d4',
@@ -62,7 +62,7 @@ module Rollio
       data.fetch(:entries).each do |table_entry|
         range = table_entry.fetch(:range)
         if table_entry.key?(:roll_on)
-          table.entry(range, roll_on: table_entry.fetch(:roll_on))
+          table.entry(range, roll_on: table_entry.fetch(:roll_on), times: table_entry.fetch(:times, 1))
         elsif table_entry.key?(:result)
           table.entry(range, table_entry.fetch(:result))
         elsif table_entry.key?(:inner_table)
@@ -155,8 +155,16 @@ module Rollio
         @roller = Roller.new(text)
       end
 
-      def entry(range, result = nil, roll_on: nil, inner_table: nil, &inner_table_config)
-        @range_set.add(table: self, range: range, result: result, roll_on: roll_on, inner_table: inner_table, inner_table_config: inner_table_config)
+      def entry(range, result = nil, roll_on: nil, inner_table: nil, times: 1, &inner_table_config)
+        @range_set.add(
+          table: self,
+          range: range,
+          result: result,
+          roll_on: roll_on,
+          inner_table: inner_table,
+          inner_table_config: inner_table_config,
+          times: times
+        )
       end
 
       protected
@@ -201,25 +209,26 @@ module Rollio
       private_constant :RangeSet
 
       module Range
-        def self.new(table:, range:, result:, roll_on:, inner_table:, inner_table_config:)
+        def self.new(table:, range:, result:, roll_on:, inner_table:, inner_table_config:, times:)
           if result
-            Result.new(table: table, range: range, result: result)
+            Result.new(table: table, range: range, result: result, times: times)
           elsif roll_on
-            RollOn.new(table: table, range: range, roll_on: roll_on)
+            RollOn.new(table: table, range: range, roll_on: roll_on, times: times)
           elsif inner_table
-            InnerRollOn.new(table: table, range: range)
+            InnerRollOn.new(table: table, range: range, times: times)
           elsif inner_table_config
-            InnerTable.new(table: table, range: range, inner_table: inner_table_config)
+            InnerTable.new(table: table, range: range, inner_table: inner_table_config, times: times)
           else
             raise "Hello"
           end
         end
 
         class Base
-          attr_reader :table, :range
-          def initialize(table:, range:)
+          attr_reader :table, :range, :times
+          def initialize(table:, range:, times:)
             @table = table
             self.range = range
+            @times = times
           end
 
           def key
@@ -268,7 +277,7 @@ module Rollio
           end
 
           def roll!
-            @result
+            [@result]
           end
         end
         private_constant :Result
@@ -280,7 +289,7 @@ module Rollio
           end
 
           def roll!
-            table_set.roll_on(@roll_on)
+            (1..times).map { table_set.roll_on(@roll_on) }
           end
 
           def result
@@ -291,7 +300,7 @@ module Rollio
 
         class InnerRollOn < Base
           def roll!
-            table_set.roll_on(key)
+            (1..times).map { table_set.roll_on(key) }
           end
 
           def result
@@ -306,7 +315,7 @@ module Rollio
           end
 
           def roll!
-            table_set.roll_on(key)
+            (1..times).map { table_set.roll_on(key) }
           end
 
           def result
