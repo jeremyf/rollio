@@ -4,14 +4,16 @@ A tool for loading random tables, rolling on those tables, and rendering the out
 
 ## Todo List
 
-- [ ] Create schema to define valid JSON document
+- [X] Create schema to define valid JSON document
 - [ ] Integrate schema validation for loaded JSON document
-- [ ] Allow inner-table logic\*
-- [ ] Create structure for loading tables
+- [X] Allow inner-table logic\*
+- [X] Create structure for loading tables
 - [ ] Create command line tool
-  - [ ] List available tables (with help) (e.g. `rollio roll -h`)
-  - [ ] Look to parameterization of table rolls
-  - [ ] Roll on tables (e.g. `rollio roll background`)
+- [X] List available tables (with help) (e.g. `rollio roll -h`)
+- [ ] Look to parameterization of table rolls
+- [X] Roll on tables (e.g. `rollio roll background`)
+- [ ] Create structure for SWN batch of tables to roll at once
+- [ ] Add ability to roll a dice expression via `rollio roll`
 
 \* - By inner table logic I'm referring to "On a d10 table, when you roll a 9 or 10, roll on this table twice using a d8"
 

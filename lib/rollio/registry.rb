@@ -4,96 +4,34 @@ require 'dice' # from dice_parser
 module Rollio
   # Responsible for registering random tables and exposing a means of rolling on those tables.
   class Registry
-    # @api private
-    # @example
-    # document = [{
-    #   key: '1-a',
-    #   roll: '2d6',
-    #   entries: [
-    #     { range: [2,3,4,5,6], roll_on: '1-b'},
-    #     { range: [7], result: 'Yolo' },
-    #     { range: [8,9,10,11,12], inner_table: {
-    #         roll: '1d4',
-    #         entries: [
-    #           { range: [1,2,3], result: 'Yes' },
-    #           { range: [4], result: 'No' }
-    #         ]
-    #       }
-    #     }
-    #   },{
-    #     key: '1-b',
-    #     roll: '1d6',
-    #     entries: [
-    #       { range: [1,2,3,4,5,6], result: 'sub-table' }
-    #     ]
-    #   }
-    # ]
-    # registry = Rollio::Registry.load(document)
-    #
-    # @example
-    #   registry = Rollio::Registry.load do
-    #     table('1') do
-    #       roll('1d5')
-    #       entry(1, 'Yes!')
-    #       entry(2..5, 'No!')
-    #     end
-    #   end
-    # @return [Rollio::Registry, #roll_on]
-    # @todo Add document schema and validation
-    # @todo Expose #load method to allow additional loading outside of initialization
-    def self.load(document = nil, context = self, &block)
-      if document
-        Registry.new do |registry|
-          document.each do |data|
-            context.load_a_table(registry: registry, data: data, context: context)
-          end
-        end
-      else
-        Registry.new(&block)
-      end
-    end
-
-    # @api private
-    def self.load_a_table(registry:, data:, context:, key: nil)
-      key ||= data.fetch(:key)
-      label = data.fetch(:label, key)
-      table = registry.table(key, label: label)
-      table.roll(data.fetch(:roll))
-      data.fetch(:entries).each do |table_entry|
-        range = table_entry.fetch(:range)
-        if table_entry.key?(:roll_on)
-          table.entry(range, roll_on: table_entry.fetch(:roll_on), times: table_entry.fetch(:times, 1))
-        elsif table_entry.key?(:result)
-          table.entry(range, table_entry.fetch(:result))
-        elsif table_entry.key?(:inner_table)
-          inner_table = table_entry.fetch(:inner_table)
-          entry = table.entry(range, inner_table: true)
-          Registry.load_a_table(registry: registry, data: inner_table, context: context, key: entry.key)
-        end
-      end
-    end
-
-    attr_reader :table_set
+    # @api public
     def initialize(&block)
-      @table_set = TableSet.new(registry: self)
+      self.table_set = TableSet.new(registry: self)
       instance_exec(self, &block) if block_given?
     end
+
+    attr_accessor :table_set
+    private :table_set=
 
     # @api private
     # @param key [String] The key of the table you want to roll on
     # @see Registry::Table#key for details
     # @todo Consider adding a modifier (eg. `roll_on(key, with: -2)`)
-    def roll_on(key)
-      @table_set.roll_on(key)
+    def roll_on(key, **kwargs)
+      table_set.roll_on(key, **kwargs)
     end
 
+    # @api private
+    # The exposed method for adding a table to the registry
     def table(*args, &block)
-      @table_set.add(*args, &block)
+      table_set.add(*args, &block)
     end
 
     extend Forwardable
     def_delegator :table_set, :render
+    def_delegator :table_set, :table_names
 
+    # The data store for all of the registered tables
     class TableSet
       extend Forwardable
 
@@ -108,18 +46,22 @@ module Rollio
 
       public
 
-      def roll_on(table_name)
-        table = @tables.fetch(table_name)
-        table.roll!
+      def table_names
+        tables.keys.sort
+      end
+
+      def roll_on(table_name, **kwargs)
+        table = tables.fetch(table_name)
+        table.roll!(**kwargs)
       end
 
       def add(key, label: key, &block)
-        @tables[key] = Table.new(table_set: self, key: key, label: label, &block)
+        tables[key] = Table.new(table_set: self, key: key, label: label, &block)
       end
 
       def render(debug: false)
         puts "Table Set { object_id: #{object_id} }\n" if debug
-        @tables.sort { |a,b| a[0] <=> b[0] }.each do |key, table|
+        tables.sort { |a,b| a[0] <=> b[0] }.each do |key, table|
           table.render
         end
         nil
@@ -147,7 +89,8 @@ module Rollio
         @range_set.render
       end
 
-      def roll!(the_roller: roller)
+      def roll!(with: roller)
+        the_roller = with.is_a?(Roller) ? with : Roller.new(with)
         roll = the_roller.roll!
         @range_set.resolve(roll: roll)
       end
@@ -156,15 +99,13 @@ module Rollio
         @roller = Roller.new(text)
       end
 
-      def entry(range, result = nil, roll_on: nil, inner_table: nil, times: 1, &inner_table_config)
+      def entry(range, result = nil, **kwargs, &inner_table_config)
         @range_set.add(
           table: self,
           range: range,
           result: result,
-          roll_on: roll_on,
-          inner_table: inner_table,
           inner_table_config: inner_table_config,
-          times: times
+          **kwargs
         )
       end
 
@@ -210,11 +151,11 @@ module Rollio
       private_constant :RangeSet
 
       module Range
-        def self.new(table:, range:, result:, roll_on:, inner_table:, inner_table_config:, times:)
+        def self.new(table:, range:, result:, roll_on: nil, inner_table: nil, inner_table_config: nil, times: 1, with: nil)
           if result
             Result.new(table: table, range: range, result: result, times: times)
           elsif roll_on
-            RollOn.new(table: table, range: range, roll_on: roll_on, times: times)
+            RollOn.new(table: table, range: range, roll_on: roll_on, times: times, with: with)
           elsif inner_table
             InnerRollOn.new(table: table, range: range, times: times)
           elsif inner_table_config
@@ -226,7 +167,7 @@ module Rollio
 
         class Base
           attr_reader :table, :range, :times
-          def initialize(table:, range:, times:)
+          def initialize(table:, range:, times:, **kwargs)
             @table = table
             self.range = range
             @times = times
@@ -284,13 +225,15 @@ module Rollio
         private_constant :Result
 
         class RollOn < Base
+          attr_reader :with
           def initialize(roll_on:, **kwargs)
             super(**kwargs)
             @roll_on = roll_on
+            @with = kwargs[:with]
           end
 
           def roll!
-            (1..times).map { table_set.roll_on(@roll_on) }
+            (1..times).map { table_set.roll_on(@roll_on, with: with) }
           end
 
           def result
@@ -329,4 +272,5 @@ module Rollio
     end
     private_constant :Table
   end
+  private_constant :Registry
 end
