@@ -28,10 +28,14 @@ module Rollio
       tables[key] = Table.new(table_set: self, key: key, label: label, &block)
     end
 
-    def render(debug: false)
+    def render(table: nil, debug: false)
       puts "Table Set { object_id: #{object_id} }\n" if debug
-      tables.sort { |a,b| a[0] <=> b[0] }.each do |key, table|
-        table.render
+      if table
+        tables.fetch(table).render
+      else
+        tables.sort { |a,b| a[0] <=> b[0] }.each do |key, table|
+          table.render
+        end
       end
       nil
     end

@@ -14,6 +14,7 @@ A tool for loading random tables, rolling on those tables, and rendering the out
 - [X] Roll on tables (e.g. `rollio roll background`)
 - [ ] Create structure for SWN batch of tables to roll at once
 - [ ] Add ability to roll a dice expression via `rollio roll`
+- [X] Add parameter -w to `rollio roll` that allows override
 
 \* - By inner table logic I'm referring to "On a d10 table, when you roll a 9 or 10, roll on this table twice using a d8"
 

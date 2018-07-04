@@ -36,9 +36,23 @@ module Rollio
 
     desc "roll <table>", "Roll on the given table"
     option(:help, aliases: '-h')
+    option(
+      :with,
+      aliases: '-w',
+      desc: "Choose <with> which dice to roll"
+    )
     def roll(table)
-      help(__method__) and return if options[:help]
-      $stdout.puts @registry.roll_on(table)
+      if options[:help]
+        help(__method__)
+        if table
+          puts "\nSee the \"#{table}\" below\n\n"
+          @registry.render(table: table)
+        end
+        return
+      end
+      args = [table]
+      args << { with: options[:with] } if options.key?(:with)
+      $stdout.puts @registry.roll_on(*args)
     end
 
     desc "render", "Render the stored tables"
